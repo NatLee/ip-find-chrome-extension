@@ -463,10 +463,13 @@ html, body {
 
 /* --- Footer --- */
 .footer {
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
     font-size: 10.5px;
     color: var(--text-faint);
-    padding: 0 0 2px;
+    padding: 0 2px 2px;
     letter-spacing: 0;
 }
 
@@ -478,6 +481,24 @@ html, body {
 
 .footer a:hover {
     color: var(--text-muted);
+}
+
+.footer-gh {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-bottom: none !important;
+    flex-shrink: 0;
+    transition: color 0.12s ease;
+}
+
+.footer-gh svg {
+    width: 12px;
+    height: 12px;
+}
+
+.footer-gh:hover {
+    color: var(--text);
 }
 
 /* --- Toast --- */
