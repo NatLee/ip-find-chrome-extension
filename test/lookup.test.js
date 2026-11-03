@@ -7,6 +7,7 @@ import {
     isIPv6,
     isValidIP,
     formatCoords,
+    hasLookupData,
     formatLocation,
     formatNetwork,
     formatTimezone,
@@ -34,6 +35,15 @@ test("accepts ordinary IPv4 addresses", () => {
         assert.ok(isIPv4(ip), ip);
         assert.ok(isValidIP(ip), ip);
     }
+});
+
+// Regression: "08.08.08.08" passed the check, then the API answered 400 and
+// the popup said "Lookup failed" instead of pointing at the typo.
+test("rejects IPv4 octets with leading zeros", () => {
+    for (const ip of ["08.08.08.08", "1.2.3.04", "001.1.1.1", "192.168.01.1"]) {
+        assert.equal(isIPv4(ip), false, ip);
+    }
+    for (const ip of ["100.64.0.1", "199.9.9.9", "1.20.3.0"]) assert.ok(isIPv4(ip), ip);
 });
 
 test("rejects things that are not IPv4 addresses", () => {
@@ -139,4 +149,14 @@ test("an unknown or missing zone shows no time", () => {
     assert.equal(formatTimezone({ timezone_name: "Mars/Olympus_Mons" }), "Mars/Olympus_Mons");
     assert.equal(formatTimezone({ timezone_name: "" }), "");
     assert.equal(formatTimezone({}), "");
+});
+
+// Regression: a private address (API: HTTP 200, success: false, empty
+// fields) was shown as if it had a result and saved to the history.
+test("knows when the API had nothing for an address", () => {
+    const privateAnswer = { ip: "192.168.1.1", isp: "", city: "", latitude: 0, longitude: 0, success: false };
+    assert.equal(hasLookupData(privateAnswer), false);
+    assert.equal(hasLookupData(GOOGLE_DNS), true);
+    assert.equal(hasLookupData({ ip: "1.2.3.4" }), true); // older responses had no success field
+    assert.equal(hasLookupData(null), false);
 });

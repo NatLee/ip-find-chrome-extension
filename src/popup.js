@@ -7,6 +7,7 @@ import {
     formatNetwork,
     formatTimezone,
     formatCoords,
+    hasLookupData,
     historyEntry,
     addHistoryEntry,
     escapeHTML,
@@ -15,6 +16,7 @@ import {
 const HISTORY_KEY = "ipfind_history";
 const THEME_KEY = "ipfind_theme";
 const HISTORY_LIMIT = 6;
+const LOOKUP_TIMEOUT_MS = 10000;
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -52,10 +54,10 @@ function setupEventListeners() {
     $("#searchBtn").addEventListener("click", searchIP);
     $("#searchIP").addEventListener("keydown", (e) => {
         if (e.key === "Enter") searchIP();
-        if ($("#searchIP").classList.contains("is-error")) {
-            $("#searchIP").classList.remove("is-error");
-        }
     });
+    // Clear the red outline once the user edits the address, not on the
+    // same keypress that just flagged it.
+    $("#searchIP").addEventListener("input", () => $("#searchIP").classList.remove("is-error"));
     $("#themeToggle").addEventListener("click", toggleTheme);
     $("#pasteBtn").addEventListener("click", pasteFromClipboard);
     $("#useMyIpBtn").addEventListener("click", () => {
@@ -73,14 +75,20 @@ function setupEventListeners() {
 /* ---------- API ---------- */
 
 async function lookup(ip) {
-    const res = await fetch(lookupUrl(ip));
+    const res = await fetch(lookupUrl(ip), { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
 }
 
+// Each lookup gets a number; an answer that arrives after a newer request
+// was started is dropped instead of overwriting the newer one.
+let myIpRequest = 0;
+let searchRequest = 0;
+
 /* ---------- My IP ---------- */
 
 async function fetchUserIP() {
+    const req = ++myIpRequest;
     const ipEl = $("#myIP");
     ipEl.innerHTML = '<div class="skeleton skeleton-ip"></div>';
     ipEl.dataset.ip = "";
@@ -88,11 +96,13 @@ async function fetchUserIP() {
 
     try {
         const data = await lookup();
+        if (req !== myIpRequest) return;
         renderMyIP(data);
     } catch (err) {
+        if (req !== myIpRequest) return;
         console.error("Error fetching IP:", err);
         ipEl.textContent = "Unavailable";
-        showToast("Couldn't fetch your IP", "error");
+        showToast(err.name === "TimeoutError" ? "geoiplookup.io didn't answer" : "Couldn't fetch your IP", "error");
     } finally {
         setTimeout(() => $("#reloadBtn").classList.remove("spinning"), 600);
     }
@@ -137,18 +147,26 @@ async function searchIP() {
     }
 
     input.classList.remove("is-error");
+    const req = ++searchRequest;
     const result = $("#searchResult");
     result.classList.remove("hidden");
     result.innerHTML = '<div class="skeleton skeleton-ip"></div>';
 
     try {
         const data = await lookup(ip);
-        renderResult(data);
-        addToHistory(data);
+        if (req !== searchRequest) return;
+        renderResult({ ...data, ip: data.ip || ip });
+        // Private and reserved addresses come back with success: false and
+        // no details; there is nothing worth keeping in the history.
+        if (hasLookupData(data)) addToHistory(data);
     } catch (err) {
+        if (req !== searchRequest) return;
         console.error("Error fetching IP details:", err);
-        result.innerHTML = '<dl class="dl"><dt>Error</dt><dd class="muted">Lookup failed. Please try again.</dd></dl>';
-        showToast("Lookup failed", "error");
+        const timedOut = err.name === "TimeoutError";
+        result.innerHTML = `<dl class="dl"><dt>Error</dt><dd class="muted">${
+            timedOut ? "geoiplookup.io didn't answer in time. Please try again." : "Lookup failed. Please try again."
+        }</dd></dl>`;
+        showToast(timedOut ? "Lookup timed out" : "Lookup failed", "error");
     }
 }
 
@@ -174,9 +192,14 @@ function renderResult(data) {
     }
     if (data.postal_code) rows.push(row("Postal", `<span class="mono">${escapeHTML(data.postal_code)}</span>`));
 
-    const body = rows.length
-        ? `<dl class="dl">${rows.join("")}</dl>`
-        : `<div class="dl"><dd class="muted">No additional information available for this IP.</dd></div>`;
+    let body;
+    if (!hasLookupData(data)) {
+        body = `<div class="dl"><dd class="muted">No location data. Private and reserved ranges (192.168.x.x, 10.x.x.x, ::1, …) aren't on the public map.</dd></div>`;
+    } else if (rows.length) {
+        body = `<dl class="dl">${rows.join("")}</dl>`;
+    } else {
+        body = `<div class="dl"><dd class="muted">No additional information available for this IP.</dd></div>`;
+    }
 
     const badge = code ? `<span class="result-badge">${escapeHTML(code)}</span>` : "";
 

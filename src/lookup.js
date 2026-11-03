@@ -15,9 +15,13 @@ export function lookupUrl(ip) {
 
 /* ---------- Validation ---------- */
 
+/**
+ * Dotted-quad IPv4. Leading zeros ("08.08.08.08") are rejected: they are
+ * ambiguous (some tools read them as octal) and the API answers 400.
+ */
 export function isIPv4(ip) {
     if (!ip) return false;
-    const re = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/;
+    const re = /^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])(\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])){3}$/;
     return re.test(ip);
 }
 
@@ -33,6 +37,14 @@ export function isValidIP(ip) {
 }
 
 /* ---------- Formatting a lookup response ---------- */
+
+/**
+ * False when the API had nothing for the address. Private and reserved
+ * ranges come back as HTTP 200 with `success: false` and empty fields.
+ */
+export function hasLookupData(data) {
+    return !!data && data.success !== false;
+}
 
 /**
  * "City, Region, Country", or "" when the response has none of them. A name
