@@ -7,6 +7,10 @@ import {
     isIPv6,
     isValidIP,
     formatCoords,
+    formatLocation,
+    formatNetwork,
+    formatTimezone,
+    localTimeIn,
     historyEntry,
     addHistoryEntry,
     escapeHTML,
@@ -89,4 +93,50 @@ test("escapes text before it goes into innerHTML", () => {
     assert.equal(escapeHTML(`<img src=x onerror="a('b')">&`), "&lt;img src=x onerror=&quot;a(&#39;b&#39;)&quot;&gt;&amp;");
     assert.equal(escapeHTML(null), "");
     assert.equal(escapeHTML(15169), "15169");
+});
+
+// Responses below are trimmed copies of what json.geoiplookup.io returned on 2026-11-03.
+const GOOGLE_DNS = {
+    ip: "8.8.8.8", isp: "Google LLC", org: "Level 3", city: "Mountain View", region: "California",
+    country_code: "US", country_name: "United States", timezone_name: "America/Los_Angeles",
+    latitude: 37.422, longitude: -122.085, asn_number: 15169, asn_org: "Google LLC",
+    asn: "AS15169 - Google LLC", success: true,
+};
+const TAIPEI = {
+    ip: "203.0.113.7", isp: "Example Telecom", city: "Taipei", region: "Taiwan",
+    country_code: "TW", country_name: "Taiwan", timezone_name: "Asia/Taipei",
+};
+
+// Regression: the API's asn field became "AS15169 - Google LLC", so the row
+// read "Google LLC · AS15169 - Google LLC".
+test("the Network row names the ISP once, followed by the AS number", () => {
+    assert.equal(formatNetwork(GOOGLE_DNS), "Google LLC · AS15169");
+    assert.equal(formatNetwork({ asn: "AS13335 - Cloudflare, Inc." }), "AS13335");
+    assert.equal(formatNetwork({ isp: "Some ISP", asn: "4134" }), "Some ISP · AS4134");
+    assert.equal(formatNetwork({ org: "Only Org" }), "Only Org");
+    assert.equal(formatNetwork({ asn_number: 0, asn: "" }), "");
+});
+
+// Regression: "Taipei, Taiwan, Taiwan".
+test("Location shows each place name once", () => {
+    assert.equal(formatLocation(TAIPEI), "Taipei, Taiwan");
+    assert.equal(formatLocation(GOOGLE_DNS), "Mountain View, California, United States");
+    assert.equal(formatLocation({ district: "Chiyoda", region: "Tokyo", country_name: "Japan" }), "Chiyoda, Tokyo, Japan");
+    assert.equal(formatLocation({}), "");
+});
+
+// Regression: the time came from a current_time field the API no longer
+// sends, and was shown in the viewer's zone rather than the IP's.
+test("Timezone shows the current time in that zone", () => {
+    const now = new Date("2026-11-03T14:00:00Z");
+    assert.equal(localTimeIn("America/Los_Angeles", now, "en-GB"), "06:00");
+    assert.equal(localTimeIn("Asia/Taipei", now, "en-GB"), "22:00");
+    assert.equal(formatTimezone(GOOGLE_DNS, now, "en-GB"), "America/Los_Angeles · 06:00");
+    assert.equal(formatTimezone(TAIPEI, now, "en-GB"), "Asia/Taipei · 22:00");
+});
+
+test("an unknown or missing zone shows no time", () => {
+    assert.equal(formatTimezone({ timezone_name: "Mars/Olympus_Mons" }), "Mars/Olympus_Mons");
+    assert.equal(formatTimezone({ timezone_name: "" }), "");
+    assert.equal(formatTimezone({}), "");
 });

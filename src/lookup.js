@@ -34,41 +34,65 @@ export function isValidIP(ip) {
 
 /* ---------- Formatting a lookup response ---------- */
 
-/** "City, Region, Country", or "" when the response has none of them. */
+/**
+ * "City, Region, Country", or "" when the response has none of them. A name
+ * that repeats (the API reports region "Taiwan" in country "Taiwan") is shown once.
+ */
 export function formatLocation(data) {
-    return [data.city || data.district, data.region, data.country_name].filter(Boolean).join(", ");
+    const parts = [data.city || data.district, data.region, data.country_name].filter(Boolean);
+    const seen = new Set();
+    return parts
+        .filter((p) => {
+            const key = String(p).trim().toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        })
+        .join(", ");
 }
 
 export function ispName(data) {
     return data.isp || data.org || data.asn_org || "";
 }
 
+/**
+ * The AS number on its own ("AS15169"). The API sends `asn_number` (15169)
+ * and `asn` ("AS15169 - Google LLC"), and older responses sent a bare number.
+ */
+export function asnLabel(data) {
+    if (Number(data.asn_number) > 0) return `AS${Number(data.asn_number)}`;
+    const raw = data.asn ? String(data.asn).trim() : "";
+    const m = /^(?:AS)?\s*(\d+)/i.exec(raw);
+    return m && Number(m[1]) > 0 ? `AS${m[1]}` : "";
+}
+
 /** "ISP · AS1234" (either half may be missing). */
 export function formatNetwork(data) {
     const isp = ispName(data);
-    const asnRaw = data.asn ? String(data.asn).trim() : "";
-    const asn = asnRaw ? (/^AS/i.test(asnRaw) ? asnRaw : `AS${asnRaw}`) : "";
+    const asn = asnLabel(data);
     if (isp && asn) return `${isp} · ${asn}`;
     return isp || asn;
 }
 
-export function formatTime(iso) {
+/**
+ * Current time in `timeZone` ("09:41"), or "" for an unknown zone. Worked out
+ * locally: the API stopped sending `current_time`, and the old code showed
+ * that time in the viewer's own zone anyway.
+ */
+export function localTimeIn(timeZone, now = new Date(), locale = undefined) {
+    if (!timeZone) return "";
     try {
-        const d = new Date(iso);
-        return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        return new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", timeZone }).format(now);
     } catch {
         return "";
     }
 }
 
 /** "Asia/Taipei · 21:30", or just the zone name, or "". */
-export function formatTimezone(data) {
-    let tz = data.timezone_name || "";
-    if (tz && data.current_time) {
-        const t = formatTime(data.current_time);
-        if (t) tz += ` · ${t}`;
-    }
-    return tz;
+export function formatTimezone(data, now = new Date(), locale = undefined) {
+    const tz = data.timezone_name || "";
+    const time = localTimeIn(tz, now, locale);
+    return time ? `${tz} · ${time}` : tz;
 }
 
 /** Coordinates as text plus a Google Maps link, or null when unknown (0,0 counts as unknown). */
