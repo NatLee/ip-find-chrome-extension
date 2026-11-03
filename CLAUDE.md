@@ -12,7 +12,7 @@
 
 ## Checks
 
-Run `npm test` and `npm run check` (Node 20+, no install step) before committing. If you change the permissions in the manifest on purpose, update `ALLOWED_PERMISSIONS` in `scripts/check-extension.js` too.
+Run `npm test` and `npm run check` (Node 20+, no install step) before committing. If you change the permissions in the manifest, or the code starts talking to a new host, update [`scripts/extension-policy.json`](scripts/extension-policy.json) (and `PRIVACY.md` for hosts). The icon PNGs come from [`assets/icon.svg`](assets/icon.svg): edit the SVG and run `node scripts/render-icons.mjs`; never edit the PNGs by hand.
 
 ## Versioning
 
