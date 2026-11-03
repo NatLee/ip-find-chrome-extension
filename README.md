@@ -88,26 +88,34 @@ dependencies.
 
 ```bash
 npm test         # unit tests for src/lookup.js (node:test)
-npm run check    # manifest, file references, no inline/remote scripts, permission allowlist
+npm run check    # manifest, file references, icon sizes, no inline/remote scripts, syntax,
+                 # and the permissions and remote hosts allowed by scripts/extension-policy.json
 ```
 
 CI runs both on every pull request.
 
 ```
 src/
-├── manifest.json   Manifest V3: popup, icon and the two clipboard permissions
+├── manifest.json   Manifest V3: popup, icons and the two clipboard permissions
 ├── popup.html      the popup
 ├── popup.css       styles, light and dark
 ├── popup.js        DOM, events, history, clipboard
 ├── lookup.js       pure helpers: validation, API URL, formatting a response
-└── icons/
-scripts/check-extension.js    the checks behind `npm run check`
+└── icons/          16, 32, 48 and 128 px, rendered from assets/icon.svg
+assets/icon.svg               the one source of the icon
+scripts/check-extension.js    the checks behind `npm run check` (policy: scripts/extension-policy.json)
+scripts/render-icons.mjs      renders the icon into every size the manifest lists
+scripts/lib/browser.mjs       starts Edge/Chrome for the image scripts
 docs/images/src/              sources for the README images
 ```
 
+To change the icon, edit `assets/icon.svg` and run `node scripts/render-icons.mjs`. It writes every PNG
+the manifest lists, at the size each entry names.
+
 The README images come from the real popup. `node docs/images/src/popup-screenshots.mjs` takes
-`popup-light.png` and `popup-dark.png` with Edge. `hero.html` and `privacy.html` are rendered with a
-headless browser; the command is in each file's header.
+`popup-light.png` and `popup-dark.png`. `hero.html` and `privacy.html` are rendered with a headless
+browser; the command is in each file's header. Both scripts use Edge or Chrome, whichever is installed
+(set `BROWSER` to pick one), and load the extension through the DevTools protocol.
 
 ### Packaging and releases
 

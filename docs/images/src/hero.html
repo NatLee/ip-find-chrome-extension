@@ -38,8 +38,10 @@
           -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 60%, #000 100%); }
 
   header { position: absolute; left: 44px; top: 40px; display: flex; align-items: center; gap: 18px; }
-  .mark { width: 58px; height: 58px; border-radius: 16px; background: linear-gradient(140deg, #1f6feb, #8957e5 60%, #1a7f37);
+  /* The real extension icon (assets/icon.svg) on a tile, so it reads on light and dark. */
+  .mark { width: 58px; height: 58px; border-radius: 16px; background: var(--card); border: 1px solid var(--line);
           display: grid; place-items: center; box-shadow: var(--shadow); }
+  .mark img { width: 46px; height: 46px; }
   h1 { margin: 0; font-size: 46px; font-weight: 800; letter-spacing: -0.035em; line-height: 1; }
   .tag { margin: 8px 0 0; font-size: 18px; color: var(--muted); letter-spacing: -0.005em; }
   .tag b { color: var(--ink); font-weight: 600; }
@@ -60,7 +62,7 @@
                   font: 500 12px "JetBrains Mono", Consolas, monospace; color: var(--muted); display: flex; align-items: center; padding: 0 12px; }
   .toolbar .btn { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: var(--ink);
                   background: color-mix(in srgb, var(--blue) 16%, transparent); outline: 2px solid color-mix(in srgb, var(--blue) 45%, transparent); }
-  .toolbar .btn svg { width: 17px; height: 17px; }
+  .toolbar .btn img { width: 18px; height: 18px; }
   .popup { position: absolute; left: 628px; top: 82px; width: 296px; border-radius: 12px; overflow: hidden;
            border: 1px solid var(--line); box-shadow: var(--pop); background: var(--bg); }
   .popup img { display: block; width: 100%; }
@@ -74,11 +76,7 @@
   <div class="dots"></div>
 
   <header>
-    <div class="mark">
-      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 4 9 14 14 0 0 1-4 9 14 14 0 0 1-4-9 14 14 0 0 1 4-9z"/>
-      </svg>
-    </div>
+    <div class="mark"><img src="../../../assets/icon.svg" alt=""></div>
     <div>
       <h1>IP Find</h1>
       <p class="tag">Your public IP, and any other IP, <b>one click</b> away.</p>
@@ -102,7 +100,7 @@
 
   <div class="toolbar">
     <div class="url">https://example.com</div>
-    <div class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 4 9 14 14 0 0 1-4 9 14 14 0 0 1-4-9 14 14 0 0 1 4-9z"/></svg></div>
+    <div class="btn"><img src="../../../assets/icon.svg" alt=""></div>
   </div>
   <div class="popup"><img id="shot" src="../popup-light.png" alt=""></div>
   <div class="notch"></div>
