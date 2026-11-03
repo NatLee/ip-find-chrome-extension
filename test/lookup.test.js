@@ -2,6 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
     API_BASE,
+    MAP_URL,
+    API_HOST,
+    newestOnly,
+    lookupErrorText,
+    placeName,
     lookupUrl,
     isIPv4,
     isIPv6,
@@ -167,4 +172,40 @@ test("knows when the API had nothing for an address", () => {
     assert.equal(hasLookupData(GOOGLE_DNS), true);
     assert.equal(hasLookupData({ ip: "1.2.3.4" }), true); // older responses had no success field
     assert.equal(hasLookupData(null), false);
+});
+
+test("Location and the history use the same place name", () => {
+    const tokyo = { ip: "1.2.3.4", district: "Chiyoda", region: "Tokyo", country_name: "Japan" };
+    assert.equal(placeName(tokyo), "Chiyoda");
+    assert.equal(placeName({ city: "Osaka", district: "Kita" }), "Osaka");
+    assert.ok(formatLocation(tokyo).startsWith(placeName(tokyo)));
+    assert.equal(historyEntry(tokyo).city, placeName(tokyo));
+});
+
+test("the map link is built on MAP_URL", () => {
+    assert.ok(formatCoords({ latitude: 1.5, longitude: 2.5 }).mapUrl.startsWith(`${MAP_URL}?q=`));
+});
+
+test("newestOnly drops answers that a newer call has overtaken", async () => {
+    const wait = (ms, v) => new Promise((r) => setTimeout(() => r(v), ms));
+    const run = newestOnly((ms, v) => (v instanceof Error ? wait(ms).then(() => { throw v; }) : wait(ms, v)));
+    const slow = run(40, "old");
+    const fast = run(5, "new");
+    assert.deepEqual(await fast, { data: "new" });
+    assert.equal(await slow, null);
+    const boom = new Error("nope");
+    assert.deepEqual(await run(1, boom), { error: boom });
+});
+
+test("a timed-out lookup names the host it was waiting for", () => {
+    const timeout = Object.assign(new Error("t"), { name: "TimeoutError" });
+    assert.deepEqual(lookupErrorText(timeout), {
+        toast: "Lookup timed out",
+        detail: `${API_HOST} didn't answer in time. Please try again.`,
+    });
+    assert.equal(API_HOST, new URL(API_BASE).hostname);
+    assert.deepEqual(lookupErrorText(new Error("HTTP 500"), "Couldn't fetch your IP"), {
+        toast: "Couldn't fetch your IP",
+        detail: "Lookup failed. Please try again.",
+    });
 });

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <!-- IP Find icon: a white slab-serif "IP" on a black square, the motif of the
+       original 26 px icon. Drawn on a 16-unit grid with whole-unit edges, so it
+       stays sharp at 16, 32, 48 and 128 px. The PNGs in src/icons/ are made
+       from this file: node scripts/render-icons.mjs -->
+  <rect x="1" y="1" width="14" height="14" rx="2" fill="#000"/>
+  <path fill="#fff" d="M3 3h4v2H6v6h1v2H3v-2h1V5H3z"/>
+  <path fill="#fff" fill-rule="evenodd" d="M8 3h3a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-1v2h1v2H8zM10 5v2h1V5z"/>
+</svg>

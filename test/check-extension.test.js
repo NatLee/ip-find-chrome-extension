@@ -42,8 +42,8 @@ test("fails on a missing icon", () => {
 test("fails on a permission nobody signed off on", () => {
     const r = check((d) => editManifest(d, (m) => ({ ...m, permissions: [...m.permissions, "tabs"], host_permissions: ["<all_urls>"] })));
     assert.equal(r.code, 1);
-    assert.match(r.out, /unexpected permission "tabs"/);
-    assert.match(r.out, /unexpected host permission "<all_urls>"/);
+    assert.match(r.out, /permission "tabs" isn't in extension-policy.json/);
+    assert.match(r.out, /host permission "<all_urls>" isn't in extension-policy.json/);
 });
 
 test("fails on Manifest V2", () => {
@@ -71,4 +71,39 @@ test("fails on a broken import or a syntax error", () => {
     assert.equal(r.code, 1);
     assert.match(r.out, /missing file: \.\/gone\.js/);
     assert.match(r.out, /lookup\.js has a syntax error/);
+});
+
+// Regression: the old icon was a 26x26 PNG listed as 24 px.
+test("fails when an icon's pixel size isn't the size the manifest gives it", () => {
+    const r = check((d) => editManifest(d, (m) => ({ ...m, icons: { ...m.icons, 48: "icons/icon32.png" } })));
+    assert.equal(r.code, 1);
+    assert.match(r.out, /icons\/icon32\.png is listed as 48x48 but is 32x32/);
+});
+
+test("fails when the code talks to a host the policy doesn't list", () => {
+    const r = check((d) => edit(d, "lookup.js", (s) => s + '\nexport const TRACKER = "https://stats.example.net/hit";\n'));
+    assert.equal(r.code, 1);
+    assert.match(r.out, /lookup\.js refers to stats\.example\.net/);
+});
+
+test("fails on a version the store rejects", () => {
+    for (const version of ["4.2.0.0.1", "4.02", "70000"]) {
+        const r = check((d) => editManifest(d, (m) => ({ ...m, version })));
+        assert.equal(r.code, 1, version);
+        assert.match(r.out, /version/);
+    }
+});
+
+test("checks a classic script as a classic script", () => {
+    const addClassic = (code) => (d) => {
+        writeFileSync(path.join(d, "extra.js"), code);
+        edit(d, "popup.html", (s) => s.replace("</body>", '<script src="extra.js"></script></body>'));
+    };
+    // Sloppy-mode code is fine outside a module, so this must pass...
+    const ok = check(addClassic("var legacy = 010; with (Math) { legacy += PI; }\n"));
+    assert.equal(ok.code, 0, ok.out);
+    // ...and a real syntax error must not.
+    const bad = check(addClassic("function (\n"));
+    assert.equal(bad.code, 1);
+    assert.match(bad.out, /extra\.js has a syntax error/);
 });

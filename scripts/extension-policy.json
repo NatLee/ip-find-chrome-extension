@@ -1,0 +1,6 @@
+{
+  "$comment": "What IP Find may use, enforced by scripts/check-extension.js. A permission changes the install prompt and a remote host must be named in PRIVACY.md, so change these lists on purpose.",
+  "permissions": ["clipboardWrite", "clipboardRead"],
+  "hostPermissions": [],
+  "remoteHosts": ["json.geoiplookup.io", "geoiplookup.io", "www.google.com", "github.com"]
+}
