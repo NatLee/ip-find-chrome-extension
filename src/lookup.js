@@ -3,6 +3,8 @@
 // touches the DOM or the network, so it can be unit-tested in Node.
 
 export const API_BASE = "https://json.geoiplookup.io/";
+/** Where a result's coordinates link to (opened only when the user clicks them). */
+export const MAP_URL = "https://www.google.com/maps";
 
 /**
  * URL for looking up `ip`, or the caller's own IP when `ip` is empty.
@@ -51,7 +53,7 @@ export function hasLookupData(data) {
  * that repeats (the API reports region "Taiwan" in country "Taiwan") is shown once.
  */
 export function formatLocation(data) {
-    const parts = [data.city || data.district, data.region, data.country_name].filter(Boolean);
+    const parts = [placeName(data), data.region, data.country_name].filter(Boolean);
     const seen = new Set();
     return parts
         .filter((p) => {
@@ -63,13 +65,20 @@ export function formatLocation(data) {
         .join(", ");
 }
 
+/** The most specific place the API names: the city, or the district when there is no city. */
+export function placeName(data) {
+    return data.city || data.district || "";
+}
+
 export function ispName(data) {
     return data.isp || data.org || data.asn_org || "";
 }
 
 /**
  * The AS number on its own ("AS15169"). The API sends `asn_number` (15169)
- * and `asn` ("AS15169 - Google LLC"), and older responses sent a bare number.
+ * and `asn` ("AS15169 - Google LLC"). Compatibility: reading the number out
+ * of `asn` covers responses without `asn_number` (the popup handled a bare
+ * number before 4.2). It can go once every response carries `asn_number`.
  */
 export function asnLabel(data) {
     if (Number(data.asn_number) > 0) return `AS${Number(data.asn_number)}`;
@@ -116,7 +125,7 @@ export function formatCoords(data) {
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) return null;
     return {
         text: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
-        mapUrl: `https://www.google.com/maps?q=${lat},${lng}`,
+        mapUrl: `${MAP_URL}?q=${lat},${lng}`,
     };
 }
 
@@ -126,7 +135,7 @@ export function historyEntry(data) {
         ip: data.ip,
         country_code: data.country_code || "",
         country_name: data.country_name || "",
-        city: data.city || data.district || "",
+        city: placeName(data),
     };
 }
 

@@ -2,6 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
     API_BASE,
+    MAP_URL,
+    placeName,
     lookupUrl,
     isIPv4,
     isIPv6,
@@ -167,4 +169,16 @@ test("knows when the API had nothing for an address", () => {
     assert.equal(hasLookupData(GOOGLE_DNS), true);
     assert.equal(hasLookupData({ ip: "1.2.3.4" }), true); // older responses had no success field
     assert.equal(hasLookupData(null), false);
+});
+
+test("Location and the history use the same place name", () => {
+    const tokyo = { ip: "1.2.3.4", district: "Chiyoda", region: "Tokyo", country_name: "Japan" };
+    assert.equal(placeName(tokyo), "Chiyoda");
+    assert.equal(placeName({ city: "Osaka", district: "Kita" }), "Osaka");
+    assert.ok(formatLocation(tokyo).startsWith(placeName(tokyo)));
+    assert.equal(historyEntry(tokyo).city, placeName(tokyo));
+});
+
+test("the map link is built on MAP_URL", () => {
+    assert.ok(formatCoords({ latitude: 1.5, longitude: 2.5 }).mapUrl.startsWith(`${MAP_URL}?q=`));
 });
