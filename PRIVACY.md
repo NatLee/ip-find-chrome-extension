@@ -1,6 +1,6 @@
 # Privacy Policy — IP Find
 
-**Last updated:** 2026-05-15
+**Last updated:** 2026-11-03
 
 ## Overview
 
@@ -13,9 +13,11 @@ There is no analytics, no telemetry, no advertising, and no backend server opera
 When you use the extension, the following network requests are made **directly from your browser**:
 
 1. **Your own IP lookup** — opening the popup sends one request to `https://json.geoiplookup.io/` to retrieve your public IP address and approximate location.
-2. **Manual lookups** — when you click *Search*, the extension sends the IP you typed to `https://json.geoiplookup.io/?ip=<ip>` to retrieve information about it.
+2. **Manual lookups** — when you click *Search*, the extension sends the IP you typed to `https://json.geoiplookup.io/<ip>` to retrieve information about it.
 
 These requests are subject to [geoiplookup.io's own privacy policy](https://geoiplookup.io/privacy). The developer of IP Find does not see, log, or proxy any of this traffic.
+
+Links in the popup are ordinary links that open a new tab only when you click them: the coordinates of a result open Google Maps at that location, and the footer links go to geoiplookup.io and this project's GitHub page.
 
 ## Data stored on your device
 
@@ -47,12 +49,12 @@ Both actions are user-initiated. The extension never reads or writes the clipboa
 ## Source code
 
 The extension is open source under the MIT license. You can audit the full source code at:
-<https://github.com/NatLee/IP-FIND-ChromeExtension>
+<https://github.com/NatLee/ip-find-chrome-extension>
 
 ## Contact
 
 Questions or concerns? Please open an issue at:
-<https://github.com/NatLee/IP-FIND-ChromeExtension/issues>
+<https://github.com/NatLee/ip-find-chrome-extension/issues>
 
 ## Changes to this policy
 
@@ -62,7 +64,7 @@ Any future changes will be reflected in this file with the *Last updated* date r
 
 ## 隱私權政策（繁體中文）
 
-**最後更新：** 2026-05-15
+**最後更新：** 2026-11-03
 
 ### 總覽
 
@@ -73,9 +75,11 @@ IP Find 是一個開放原始碼的 Chrome 擴充功能，協助您查詢自己�
 使用本擴充功能時，瀏覽器會**直接**對外發出以下請求：
 
 1. **查詢您自己的 IP** — 開啟 popup 時，會向 `https://json.geoiplookup.io/` 發出一次請求，以取得您的公開 IP 與大致位置。
-2. **手動查詢** — 您按下「Search」時，會將您輸入的 IP 送到 `https://json.geoiplookup.io/?ip=<ip>` 以查詢資訊。
+2. **手動查詢** — 您按下「Search」時，會將您輸入的 IP 送到 `https://json.geoiplookup.io/<ip>` 以查詢資訊。
 
 上述請求適用 [geoiplookup.io 自身的隱私權政策](https://geoiplookup.io/privacy)。本擴充功能開發者不會接觸、記錄或代理這些流量。
+
+popup 裡的連結都是一般連結，只有在您點擊時才會開新分頁：查詢結果的座標會在 Google 地圖上開啟該位置，頁尾的連結則分別前往 geoiplookup.io 和本專案的 GitHub 頁面。
 
 ### 儲存於您裝置上的資料
 
@@ -107,12 +111,12 @@ IP Find 是一個開放原始碼的 Chrome 擴充功能，協助您查詢自己�
 ### 原始碼
 
 本擴充功能採用 MIT 授權釋出，完整原始碼可於下列網址檢視：
-<https://github.com/NatLee/IP-FIND-ChromeExtension>
+<https://github.com/NatLee/ip-find-chrome-extension>
 
 ### 聯絡方式
 
 如有疑問或建議，請於下列網址開立 issue：
-<https://github.com/NatLee/IP-FIND-ChromeExtension/issues>
+<https://github.com/NatLee/ip-find-chrome-extension/issues>
 
 ### 政策異動
 
