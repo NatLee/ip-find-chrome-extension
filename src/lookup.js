@@ -15,6 +15,38 @@ export function lookupUrl(ip) {
     return ip ? API_BASE + encodeURIComponent(ip) : API_BASE;
 }
 
+/** The host the popup talks to, for messages ("json.geoiplookup.io didn't answer"). */
+export const API_HOST = new URL(API_BASE).hostname;
+
+/* ---------- Running lookups ---------- */
+
+/**
+ * Wrap an async function so that only its newest call reports back. Each call
+ * resolves to { data } or { error }, or to null when a later call started in
+ * the meantime: that answer is out of date and must not reach the screen.
+ */
+export function newestOnly(fn) {
+    let latest = 0;
+    return async (...args) => {
+        const call = ++latest;
+        let outcome;
+        try {
+            outcome = { data: await fn(...args) };
+        } catch (error) {
+            outcome = { error };
+        }
+        return call === latest ? outcome : null;
+    };
+}
+
+/** Text for a failed lookup: a short toast and a sentence for the result card. */
+export function lookupErrorText(error, toast = "Lookup failed") {
+    if (error?.name === "TimeoutError") {
+        return { toast: "Lookup timed out", detail: `${API_HOST} didn't answer in time. Please try again.` };
+    }
+    return { toast, detail: "Lookup failed. Please try again." };
+}
+
 /* ---------- Validation ---------- */
 
 /**

@@ -11,12 +11,15 @@ import {
     historyEntry,
     addHistoryEntry,
     escapeHTML,
+    newestOnly,
+    lookupErrorText,
 } from "./lookup.js";
 
 const HISTORY_KEY = "ipfind_history";
 const THEME_KEY = "ipfind_theme";
 const HISTORY_LIMIT = 6;
 const LOOKUP_TIMEOUT_MS = 10000;
+const TOAST_MS = 1600;
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -51,6 +54,9 @@ function setupEventListeners() {
         $("#reloadBtn").classList.add("spinning");
         fetchUserIP();
     });
+    // One turn per click: the class comes off when the CSS animation ends,
+    // so its length lives only in popup.css.
+    $("#reloadBtn").addEventListener("animationend", () => $("#reloadBtn").classList.remove("spinning"));
     $("#searchBtn").addEventListener("click", searchIP);
     $("#searchIP").addEventListener("keydown", (e) => {
         if (e.key === "Enter") searchIP();
@@ -80,32 +86,28 @@ async function lookup(ip) {
     return res.json();
 }
 
-// Each lookup gets a number; an answer that arrives after a newer request
-// was started is dropped instead of overwriting the newer one.
-let myIpRequest = 0;
-let searchRequest = 0;
+// Only the newest call of each reports back, so a slow answer can't
+// overwrite a newer one.
+const lookupMyIp = newestOnly(() => lookup());
+const lookupIp = newestOnly((ip) => lookup(ip));
 
 /* ---------- My IP ---------- */
 
 async function fetchUserIP() {
-    const req = ++myIpRequest;
     const ipEl = $("#myIP");
     ipEl.innerHTML = '<div class="skeleton skeleton-ip"></div>';
     ipEl.dataset.ip = "";
     setMyInfo({ location: "—", isp: "—", timezone: "—" });
 
-    try {
-        const data = await lookup();
-        if (req !== myIpRequest) return;
-        renderMyIP(data);
-    } catch (err) {
-        if (req !== myIpRequest) return;
-        console.error("Error fetching IP:", err);
+    const outcome = await lookupMyIp();
+    if (!outcome) return; // a newer refresh is on its way
+    if (outcome.error) {
+        console.error("Error fetching IP:", outcome.error);
         ipEl.textContent = "Unavailable";
-        showToast(err.name === "TimeoutError" ? "geoiplookup.io didn't answer" : "Couldn't fetch your IP", "error");
-    } finally {
-        setTimeout(() => $("#reloadBtn").classList.remove("spinning"), 600);
+        showToast(lookupErrorText(outcome.error, "Couldn't fetch your IP").toast, "error");
+        return;
     }
+    renderMyIP(outcome.data);
 }
 
 function renderMyIP(data) {
@@ -147,27 +149,24 @@ async function searchIP() {
     }
 
     input.classList.remove("is-error");
-    const req = ++searchRequest;
     const result = $("#searchResult");
     result.classList.remove("hidden");
     result.innerHTML = '<div class="skeleton skeleton-ip"></div>';
 
-    try {
-        const data = await lookup(ip);
-        if (req !== searchRequest) return;
-        renderResult({ ...data, ip: data.ip || ip });
-        // Private and reserved addresses come back with success: false and
-        // no details; there is nothing worth keeping in the history.
-        if (hasLookupData(data)) addToHistory(data);
-    } catch (err) {
-        if (req !== searchRequest) return;
-        console.error("Error fetching IP details:", err);
-        const timedOut = err.name === "TimeoutError";
-        result.innerHTML = `<dl class="dl"><dt>Error</dt><dd class="muted">${
-            timedOut ? "geoiplookup.io didn't answer in time. Please try again." : "Lookup failed. Please try again."
-        }</dd></dl>`;
-        showToast(timedOut ? "Lookup timed out" : "Lookup failed", "error");
+    const outcome = await lookupIp(ip);
+    if (!outcome) return; // a newer search is on its way
+    if (outcome.error) {
+        console.error("Error fetching IP details:", outcome.error);
+        const text = lookupErrorText(outcome.error);
+        result.innerHTML = `<dl class="dl"><dt>Error</dt><dd class="muted">${escapeHTML(text.detail)}</dd></dl>`;
+        showToast(text.toast, "error");
+        return;
     }
+    const data = outcome.data;
+    renderResult({ ...data, ip: data.ip || ip });
+    // Private and reserved addresses come back with success: false and
+    // no details; there is nothing worth keeping in the history.
+    if (hasLookupData(data)) addToHistory(data);
 }
 
 function renderResult(data) {
@@ -324,5 +323,5 @@ function showToast(msg, kind = "") {
     t.textContent = msg;
     t.className = "toast show" + (kind ? " is-" + kind : "");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove("show"), 1600);
+    toastTimer = setTimeout(() => t.classList.remove("show"), TOAST_MS);
 }
