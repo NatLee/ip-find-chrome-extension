@@ -1,0 +1,99 @@
+<!doctype html>
+<!--
+  "What leaves your browser" diagram for the README. Render both themes (#dark picks the
+  dark one) with a Chromium-based browser, e.g.
+    msedge --headless=new --hide-scrollbars --force-device-scale-factor=2 --window-size=960,360
+           --default-background-color=00000000 --virtual-time-budget=5000
+           --screenshot=privacy-dark.png "file:///…/privacy.html#dark"
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>IP Find: what leaves your browser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=block" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff; --bg2: #f6f8fa; --ink: #1f2328; --muted: #59636e; --line: #d1d9e0; --card: #ffffff;
+    --blue: #0969da; --green: #1a7f37; --red: #cf222e; --wire: #8c959f;
+    --shadow: 0 1px 2px rgba(31,35,40,.06), 0 6px 18px rgba(31,35,40,.06); --tint1: rgba(9,105,218,.08);
+  }
+  .dark {
+    --bg: #0d1117; --bg2: #151b23; --ink: #f0f6fc; --muted: #9198a1; --line: #3d444d; --card: #151b23;
+    --blue: #4493f8; --green: #3fb950; --red: #f85149; --wire: #768390;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35); --tint1: rgba(68,147,248,.12);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: transparent; }
+  body { width: 960px; height: 360px; font-family: Inter, "Segoe UI", sans-serif; color: var(--ink); }
+  code, .mono { font-family: "JetBrains Mono", Consolas, monospace; font-variant-ligatures: none; }
+  .frame { position: relative; width: 960px; height: 360px; border-radius: 22px; overflow: hidden; border: 1px solid var(--line);
+           background: radial-gradient(600px 260px at 50% 0%, var(--tint1), transparent 70%), var(--bg); }
+  .label { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+           display: flex; align-items: center; gap: 8px; }
+  .label i { width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--blue)); }
+  .title { position: absolute; left: 40px; top: 26px; }
+
+  .node { position: absolute; top: 62px; width: 236px; height: 164px; background: var(--card); border: 1px solid var(--line);
+          border-radius: 14px; box-shadow: var(--shadow); padding: 16px 18px; }
+  .node h3 { margin: 10px 0 0; font-size: 20px; font-weight: 750; letter-spacing: -0.02em; }
+  .node p { margin: 6px 0 0; font-size: 13px; color: var(--muted); line-height: 1.45; }
+  #me { left: 40px; }
+  #api { right: 40px; }
+  #api h3 { font-family: "JetBrains Mono", Consolas, monospace; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+
+  .msg { position: absolute; left: 300px; width: 360px; text-align: center; }
+  .msg .what { font-size: 14px; font-weight: 600; }
+  .msg .what code { font-size: 13px; font-weight: 500; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg2); }
+  .msg .why { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+  #m1 { top: 68px; } #m2 { top: 124px; } #m3 { top: 184px; }
+  svg.wires { position: absolute; inset: 0; }
+  .wire { fill: none; stroke: var(--wire); stroke-width: 2; stroke-dasharray: 5 6; }
+  .head { fill: var(--wire); }
+  .wire.back { stroke: var(--green); stroke-dasharray: none; opacity: .8; }
+  .head.back { fill: var(--green); opacity: .8; }
+
+  .row { position: absolute; left: 40px; right: 40px; top: 246px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .box { background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 13px 16px; }
+  .box p { margin: 7px 0 0; font-size: 13px; line-height: 1.45; }
+  .box p span { color: var(--muted); }
+</style>
+</head>
+<body>
+<script>if (location.hash === '#dark') document.documentElement.className = 'dark';</script>
+<div class="frame">
+  <div class="label title"><i></i>What leaves your browser</div>
+
+  <div class="node" id="me">
+    <div class="label" style="--c: var(--green)"><i></i>Your browser</div>
+    <h3>IP Find popup</h3>
+    <p>Runs locally. No account, no sign-in, no developer server in between.</p>
+  </div>
+
+  <div class="node" id="api">
+    <div class="label"><i></i>Lookup service</div>
+    <h3>json.geoiplookup.io</h3>
+    <p>Answers the request directly. Its own privacy policy applies to these requests.</p>
+  </div>
+
+  <svg class="wires" width="960" height="360">
+    <path class="wire" d="M282 114 H670"/><path class="head" d="M676 114 l-9 -5 v10 z"/>
+    <path class="wire" d="M282 170 H670"/><path class="head" d="M676 170 l-9 -5 v10 z"/>
+    <path class="wire back" d="M676 212 H290"/><path class="head back" d="M284 212 l9 -5 v10 z"/>
+  </svg>
+
+  <div class="msg" id="m1"><div class="what">Open the popup &nbsp;<code>GET /</code></div><div class="why">nothing typed is sent; the service sees your public IP</div></div>
+  <div class="msg" id="m2"><div class="what">Search &nbsp;<code>GET /8.8.8.8</code></div><div class="why">only the address you typed</div></div>
+  <div class="msg" id="m3"><div class="what">location · ISP · ASN · timezone</div></div>
+
+  <div class="row">
+    <div class="box"><div class="label" style="--c: var(--green)"><i></i>Stays on this device</div>
+      <p>Last 6 lookups and your theme, <span>in the extension's localStorage</span></p></div>
+    <div class="box"><div class="label"><i></i>Only if you click</div>
+      <p>Google Maps for the coordinates, <span>and the geoiplookup.io and GitHub links</span></p></div>
+    <div class="box"><div class="label" style="--c: var(--red)"><i></i>Never</div>
+      <p>Analytics, ads, tracking, <span>or reading the pages you visit</span></p></div>
+  </div>
+</div>
+</body>
+</html>
