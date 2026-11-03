@@ -94,7 +94,9 @@ export function formatNetwork(data) {
 export function localTimeIn(timeZone, now = new Date(), locale = undefined) {
     if (!timeZone) return "";
     try {
-        return new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", timeZone }).format(now);
+        // 24-hour clock, so an English popup doesn't show "上午 06:00" on a
+        // zh-TW system or "06:00 AM" next to a zone name.
+        return new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(now);
     } catch {
         return "";
     }

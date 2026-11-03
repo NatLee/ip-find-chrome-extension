@@ -145,6 +145,14 @@ test("Timezone shows the current time in that zone", () => {
     assert.equal(formatTimezone(TAIPEI, now, "en-GB"), "Asia/Taipei · 22:00");
 });
 
+test("the time reads HH:MM whatever the browser's language", () => {
+    const evening = new Date("2026-11-03T10:05:00Z");
+    for (const locale of ["en-US", "zh-TW", "ja-JP", "de-DE", undefined]) {
+        assert.equal(localTimeIn("Asia/Taipei", evening, locale), "18:05", String(locale));
+        assert.equal(localTimeIn("America/Los_Angeles", evening, locale), "02:05", String(locale));
+    }
+});
+
 test("an unknown or missing zone shows no time", () => {
     assert.equal(formatTimezone({ timezone_name: "Mars/Olympus_Mons" }), "Mars/Olympus_Mons");
     assert.equal(formatTimezone({ timezone_name: "" }), "");
