@@ -17,6 +17,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Test before packaging
+        run: |
+          npm test
+          npm run check
+
       - name: Read manifest metadata
         id: meta
         run: |
