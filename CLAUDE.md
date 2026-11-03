@@ -2,11 +2,17 @@
 
 ## Repo layout
 
-- [`src/`](src/) — extension source (loaded as the unpacked extension and zipped for distribution).
+- [`src/`](src/) — extension source (loaded as the unpacked extension and zipped for distribution). [`src/lookup.js`](src/lookup.js) holds the pure helpers (validation, API URL, formatting) that the unit tests cover; [`src/popup.js`](src/popup.js) is the DOM side.
+- [`test/`](test/) — `node:test` unit tests; [`scripts/check-extension.js`](scripts/check-extension.js) — manifest / file / permission checks.
+- [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — runs `npm test` and `npm run check` on every PR and push to `master`.
 - [`package.sh`](package.sh) — local build helper; produces `dist/ip-find-v<version>.zip`.
 - [`release.sh`](release.sh) / [`release.ps1`](release.ps1) — tag the current commit with `v<version>` from the manifest and push it.
 - [`.github/workflows/release.yml`](.github/workflows/release.yml) — CI that builds the ZIP (and optionally CRX) on tag push, then drafts a GitHub Release.
 - [`PRIVACY.md`](PRIVACY.md) — privacy policy linked from the Chrome Web Store listing.
+
+## Checks
+
+Run `npm test` and `npm run check` (Node 20+, no install step) before committing. If you change the permissions in the manifest on purpose, update `ALLOWED_PERMISSIONS` in `scripts/check-extension.js` too.
 
 ## Versioning
 
