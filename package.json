@@ -1,0 +1,13 @@
+{
+  "name": "ip-find",
+  "private": true,
+  "description": "Dev scripts for the IP Find browser extension. The extension itself is src/ and has no dependencies.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "check": "node scripts/check-extension.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
