@@ -1,10 +1,22 @@
-const API_BASE = "https://json.geoiplookup.io/";
+import {
+    lookupUrl,
+    isIPv6,
+    isValidIP,
+    formatLocation,
+    ispName,
+    formatNetwork,
+    formatTimezone,
+    formatCoords,
+    historyEntry,
+    addHistoryEntry,
+    escapeHTML,
+} from "./lookup.js";
+
 const HISTORY_KEY = "ipfind_history";
 const THEME_KEY = "ipfind_theme";
 const HISTORY_LIMIT = 6;
 
 const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => document.querySelectorAll(sel);
 
 document.addEventListener("DOMContentLoaded", () => {
     initTheme();
@@ -61,8 +73,7 @@ function setupEventListeners() {
 /* ---------- API ---------- */
 
 async function lookup(ip) {
-    const url = ip ? `${API_BASE}?ip=${encodeURIComponent(ip)}` : API_BASE;
-    const res = await fetch(url);
+    const res = await fetch(lookupUrl(ip));
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
 }
@@ -94,11 +105,9 @@ function renderMyIP(data) {
     ipEl.classList.toggle("is-ipv6", isIPv6(data.ip));
 
     setMyInfo({
-        location: formatLocation(data),
-        isp: data.isp || data.org || data.asn_org || "Unknown ISP",
-        timezone: data.timezone_name
-            ? `${data.timezone_name}${data.current_time ? " · " + formatTime(data.current_time) : ""}`
-            : "Unknown timezone",
+        location: formatLocation(data) || "Unknown location",
+        isp: ispName(data) || "Unknown ISP",
+        timezone: formatTimezone(data) || "Unknown timezone",
     });
 }
 
@@ -107,20 +116,6 @@ function setMyInfo({ location, isp, timezone }) {
     grid.querySelector('[data-field="location"]').textContent = location;
     grid.querySelector('[data-field="isp"]').textContent = isp;
     grid.querySelector('[data-field="timezone"]').textContent = timezone;
-}
-
-function formatLocation(data) {
-    const parts = [data.city || data.district, data.region, data.country_name].filter(Boolean);
-    return parts.length ? parts.join(", ") : "Unknown location";
-}
-
-function formatTime(iso) {
-    try {
-        const d = new Date(iso);
-        return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    } catch {
-        return "";
-    }
 }
 
 /* ---------- Search ---------- */
@@ -135,7 +130,7 @@ async function searchIP() {
         return;
     }
 
-    if (!validateIP(ip)) {
+    if (!isValidIP(ip)) {
         input.classList.add("is-error");
         showToast("Invalid IP format", "error");
         return;
@@ -162,36 +157,19 @@ function renderResult(data) {
     const code = (data.country_code || "").toUpperCase();
     const ipClass = isIPv6(ip) ? "result-ip is-ipv6" : "result-ip";
 
-    const locParts = [data.city || data.district, data.region, data.country_name].filter(Boolean);
-    const locText = locParts.join(", ");
-
-    const ispName = data.isp || data.org || data.asn_org || "";
-    const asnRaw = data.asn ? String(data.asn).trim() : "";
-    const asnText = asnRaw ? (/^AS/i.test(asnRaw) ? asnRaw : `AS${asnRaw}`) : "";
-    let networkText = "";
-    if (ispName && asnText) networkText = `${ispName} · ${asnText}`;
-    else networkText = ispName || asnText;
-
-    let tzText = data.timezone_name || "";
-    if (tzText && data.current_time) {
-        const t = formatTime(data.current_time);
-        if (t) tzText += ` · ${t}`;
-    }
-
-    const lat = parseFloat(data.latitude);
-    const lng = parseFloat(data.longitude);
-    const hasCoords = Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0);
-    const coords = hasCoords ? `${lat.toFixed(4)}, ${lng.toFixed(4)}` : "";
-    const mapUrl = hasCoords ? `https://www.google.com/maps?q=${lat},${lng}` : "";
+    const locText = formatLocation(data);
+    const networkText = formatNetwork(data);
+    const tzText = formatTimezone(data);
+    const coords = formatCoords(data);
 
     const rows = [];
     if (locText) rows.push(row("Location", escapeHTML(locText)));
     if (networkText) rows.push(row("Network", escapeHTML(networkText)));
     if (tzText) rows.push(row("Timezone", escapeHTML(tzText)));
-    if (hasCoords) {
+    if (coords) {
         rows.push(row(
             "Coords",
-            `<a href="${escapeAttr(mapUrl)}" target="_blank" rel="noopener"><span class="mono">${escapeHTML(coords)}</span></a>`
+            `<a href="${escapeHTML(coords.mapUrl)}" target="_blank" rel="noopener"><span class="mono">${escapeHTML(coords.text)}</span></a>`
         ));
     }
     if (data.postal_code) rows.push(row("Postal", `<span class="mono">${escapeHTML(data.postal_code)}</span>`));
@@ -227,15 +205,8 @@ function row(label, valueHTML) {
 
 function addToHistory(data) {
     if (!data.ip) return;
-    const list = getHistory().filter((h) => h.ip !== data.ip);
-    list.unshift({
-        ip: data.ip,
-        country_code: data.country_code || "",
-        country_name: data.country_name || "",
-        city: data.city || data.district || "",
-    });
-    const trimmed = list.slice(0, HISTORY_LIMIT);
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+    const list = addHistoryEntry(getHistory(), historyEntry(data), HISTORY_LIMIT);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
     renderHistory();
 }
 
@@ -263,7 +234,7 @@ function renderHistory() {
             const code = (h.country_code || "").toUpperCase();
             const badge = code ? escapeHTML(code) : "??";
             const loc = [h.city, h.country_name].filter(Boolean).join(", ") || "Unknown";
-            return `<div class="history-item" data-ip="${escapeAttr(h.ip)}">
+            return `<div class="history-item" data-ip="${escapeHTML(h.ip)}">
                 <span class="history-flag">${badge}</span>
                 <span class="history-ip">${escapeHTML(h.ip)}</span>
                 <span class="history-loc">${escapeHTML(loc)}</span>
@@ -331,35 +302,4 @@ function showToast(msg, kind = "") {
     t.className = "toast show" + (kind ? " is-" + kind : "");
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => t.classList.remove("show"), 1600);
-}
-
-/* ---------- Validation ---------- */
-
-function validateIP(ip) {
-    return isIPv4(ip) || isIPv6(ip);
-}
-
-function isIPv4(ip) {
-    if (!ip) return false;
-    const re = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/;
-    return re.test(ip);
-}
-
-function isIPv6(ip) {
-    if (!ip) return false;
-    // Permissive IPv6 check (full + compressed + IPv4-mapped)
-    const re = /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$/;
-    return re.test(ip);
-}
-
-/* ---------- Helpers ---------- */
-
-function escapeHTML(s) {
-    return String(s ?? "").replace(/[&<>"']/g, (c) => ({
-        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-    }[c]));
-}
-
-function escapeAttr(s) {
-    return escapeHTML(s);
 }
