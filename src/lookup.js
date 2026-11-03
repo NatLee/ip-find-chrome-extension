@@ -4,9 +4,13 @@
 
 export const API_BASE = "https://json.geoiplookup.io/";
 
-/** URL for looking up `ip`, or the caller's own IP when `ip` is empty. */
+/**
+ * URL for looking up `ip`, or the caller's own IP when `ip` is empty.
+ * The address goes in the path: geoiplookup.io ignores an `?ip=` query and
+ * answers with the caller's own IP instead.
+ */
 export function lookupUrl(ip) {
-    return ip ? `${API_BASE}?ip=${encodeURIComponent(ip)}` : API_BASE;
+    return ip ? API_BASE + encodeURIComponent(ip) : API_BASE;
 }
 
 /* ---------- Validation ---------- */

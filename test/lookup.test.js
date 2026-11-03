@@ -17,6 +17,14 @@ test("looking up your own IP calls the API root", () => {
     assert.equal(lookupUrl(undefined), API_BASE);
 });
 
+// Regression: the IP used to go in an ?ip= query, which the API ignores, so
+// every search showed the caller's own IP.
+test("looking up another IP puts it in the URL path", () => {
+    assert.equal(lookupUrl("8.8.8.8"), "https://json.geoiplookup.io/8.8.8.8");
+    assert.equal(lookupUrl("2001:4860:4860::8888"), "https://json.geoiplookup.io/2001%3A4860%3A4860%3A%3A8888");
+    assert.doesNotMatch(lookupUrl("1.1.1.1"), /\?/);
+});
+
 test("accepts ordinary IPv4 addresses", () => {
     for (const ip of ["8.8.8.8", "1.1.1.1", "0.0.0.0", "255.255.255.255", "192.168.1.1", "10.0.0.254"]) {
         assert.ok(isIPv4(ip), ip);
